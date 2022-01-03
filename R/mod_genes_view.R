@@ -119,7 +119,7 @@ mod_genes_view_server <- function(input, output, session,
   ns <- session$ns
   
   pheno <- LG <- l.dist <- g.dist <- high <- mk.names <- track_variant <- track_alignments <- track_wiggle <- NULL
-  start <- end <- NULL
+  start <- end <- seqid <- NULL
   
   observeEvent(input$exit, {
     stopApp()
@@ -304,8 +304,15 @@ mod_genes_view_server <- function(input, output, session,
     if(!is.null(loadJBrowse_gff3())){
       if(loadJBrowse_gff3() != "") {
         path.gff <- loadJBrowse_gff3()
-      } else path.gff <- NULL
-    } else path.gff <- NULL
+        if(grepl("^http", loadJBrowse_gff3())){
+          gff.dir <- tempfile()
+          download.file(loadJBrowse_gff3(), destfile = gff.dir)
+          gff <- vroom(gff.dir, delim = "\t", skip = 3, col_names = F)
+        } else {
+          gff <- vroom(loadJBrowse_gff3(), delim = "\t", skip = 3, col_names = F)
+        }
+      } else path.gff <- gff <- NULL
+    } else path.gff <- gff <- NULL
     
     if(!is.null(loadJBrowse_vcf())){
       if(loadJBrowse_vcf() != ""){
@@ -328,6 +335,9 @@ mod_genes_view_server <- function(input, output, session,
     if(is.null(loadJBrowse_fasta()) & !is.null(loadExample())){
         path.fa <- loadExample()$fasta
         path.gff <- loadExample()$gff3
+        gff.dir <- tempfile()
+        download.file(loadExample()$gff3, destfile = gff.dir)
+        gff <- vroom(gff.dir, delim = "\t", skip = 3, col_names = F)
         # Add other tracks
         # variants_track <- track_variant()
         # alignments_track <- track_alignments()
@@ -344,7 +354,8 @@ mod_genes_view_server <- function(input, output, session,
          path.vcf = path.vcf, 
          path.align = path.align,
          path.wig = path.wig,
-         data_server = data_server)
+         data_server = data_server,
+         gff = gff)
   })
   
   # Reset server
@@ -482,17 +493,16 @@ mod_genes_view_server <- function(input, output, session,
     
     if(is.null(loadMap()$ph.p1)) stop("Upload map information in the upload session to access this feature.")
     
-    if(!is.null(button()$path.gff)) {
+    if(!is.null(button()$gff)) {
       group <- as.numeric(input$group)
       mks<- loadMap()$maps[[group]]
       mks <- mks[order(mks$l.dist),]
       mks.range <- which(mks$l.dist >= input$range[1] &  mks$l.dist <= input$range[2])
       mks.range.1 <- mks$g.dist[mks.range[1]]
       mks.range.2 <- mks$g.dist[mks.range[length(mks.range)]]
-      
-      df <- vroom(button()$path.gff, delim = "\t", skip = 3, col_names = F)
+      df <- button()$gff
       colnames(df) <- c("seqid", "source", "type", "start", "end", "score", "strand", "phase", "attributes")
-      df <- df %>% filter(start > mks.range.1 & end < mks.range.2)
+      df <- df %>% filter(seqid == unique(mks$g.chr) & start > mks.range.1 & end < mks.range.2)
       DT::datatable(df, extensions = 'Buttons',
                     options = list(
                       dom = 'Bfrtlp',
