@@ -3,6 +3,7 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/viewpoly)](https://cran.r-project.org/package=viewpoly)
 [![R-universe PolyVerse Status Badge](https://polyploids.r-universe.dev/badges/viewpoly)](https://polyploids.r-universe.dev/badges/viewpoly)
+[![codecov](https://codecov.io/github/mmollina/viewpoly/branch/main/graphs/badge.svg)](https://codecov.io/github/mmollina/viewpoly)
 [![CRAN_monthly_downloads](https://cranlogs.r-pkg.org/badges/viewpoly)](https://cranlogs.r-pkg.org/badges/viewpoly)
 <!-- badges: end -->
   
@@ -12,6 +13,8 @@
 [diaQTL](https://github.com/jendelman/diaQTL) and genomic assembly, variants, annotation and alignment files. VIEWpoly uses [shiny](https://CRAN.R-project.org/package=shiny), [golem](https://CRAN.R-project.org/package=golem), [ggplot2](https://CRAN.R-project.org/package=ggplot2), [plotly](https://CRAN.R-project.org/package=plotly), and [JBrowseR]( https://CRAN.R-project.org/package=JBrowseR) libraries to graphically display the QTL profiles, positions, alleles estimated effects, progeny individuals containing specific haplotypes and their breeding values. It is also possible to access marker dosage and parental phase from the linkage map. If genomic information is available, the corresponding QTL positions are interactively explored using JBrowseR interface, allowing the search for candidate genes. It also provides features to download specific information into comprehensive tables and images for further analysis and presentation.
 
 ### Quick Start
+
+The quickest way of accessing `VIEWpoly` is [here](https://cris-taniguti.shinyapps.io/viewpoly/). However, our shinyapps.io does not upload files larger than 1GB. If you have larger datasets, you will need to run `VIEWpoly` locally.
 
 You can run `VIEWpoly` locally installing the package and accessing the graphical interface through a web browser. To use the stable version, please install the package from CRAN:
 
@@ -55,6 +58,8 @@ It is optional to upload also:
 Access the [tutorial](https://cristianetaniguti.github.io/viewpoly_vignettes/VIEWpoly_tutorial.html). 
 
 We also presented the app main features in [this video](https://www.youtube.com/watch?v=OBt_jebhfeY)
+
+If you would like to contribute to develop `VIEWpoly`, please check our [Contributing Guidelines](https://cristianetaniguti.github.io/viewpoly_vignettes/Contributing_guidelines.html).
 
 ### References
 

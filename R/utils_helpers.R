@@ -22,6 +22,9 @@
 #' @param verbose if \code{TRUE} (default), the current progress is shown; if
 #'     \code{FALSE}, no output is produced
 #'
+#'
+#' @return object of class \code{mappoly.data}
+#' 
 #' @author Marcelo Mollinari \email{mmollin@ncsu.edu}
 #'
 #' @references
@@ -36,12 +39,12 @@
 #'     models, _G3: Genes, Genomes, Genetics_. 
 #'     \doi{10.1534/g3.119.400378}
 #'     
-#' @rdname utils
 #' 
 #' @keywords internal
 #' 
 #' @importFrom reshape2 acast
 #' @importFrom dplyr filter arrange
+#' 
 import_data_from_polymapR <- function(input.data, 
                                       ploidy, 
                                       parent1 = "P1", 
@@ -55,13 +58,16 @@ import_data_from_polymapR <- function(input.data,
   input.type <- match.arg(input.type)
   if(input.type  ==  "discrete"){
     geno.dose <- input.data[,-match(c(parent1, parent2), colnames(input.data)), drop = FALSE]
+    dosage.p1 <- input.data[,parent1]
+    dosage.p2 <- input.data[,parent2]
+    names(dosage.p1) <- names(dosage.p2) <- rownames(input.data)
     mappoly.data <- structure(list(ploidy = ploidy,
                                    n.ind = ncol(geno.dose),
                                    n.mrk = nrow(geno.dose),
                                    ind.names = colnames(geno.dose),
                                    mrk.names = rownames(geno.dose),
-                                   dosage.p1 = input.data[,parent1],
-                                   dosage.p2 = input.data[,parent2],
+                                   dosage.p1 = dosage.p1,
+                                   dosage.p2 = dosage.p2,
                                    chrom = NA,
                                    genome.pos = NA,
                                    seq.ref = NULL,
@@ -77,7 +83,7 @@ import_data_from_polymapR <- function(input.data,
   } 
   else {
     if(is.null(pardose)) 
-      stop("provide parental dosage.")
+      stop(safeError("provide parental dosage."))
     rownames(pardose) <- pardose$MarkerName
     dat <- input.data[,c("MarkerName", "SampleName",paste0("P", 0:ploidy))]
     p1 <- unique(sapply(parent1, function(x) unique(grep(pattern = x, dat[,"SampleName"], value = TRUE))))
@@ -198,9 +204,11 @@ import_data_from_polymapR <- function(input.data,
 #' Filter non-conforming classes in F1, non double reduced population.
 #' Function from MAPpoly.
 #'
-#' @param void internal function to be documented
+#' @param input.data object of class mappoly
+#' @param prob.thres threshold for filtering genotypes by genotype probability values. If NULL, the filter is not applied.
 #' 
-#' @rdname utils
+#' @return filtered \code{mappoly.data} object
+#' 
 #' 
 #' @keywords internal
 filter_non_conforming_classes <- function(input.data, prob.thres = NULL)
@@ -272,7 +280,6 @@ filter_non_conforming_classes <- function(input.data, prob.thres = NULL)
 #' 
 #' @return a list of linkage phase configurations
 #' 
-#' @rdname utils
 #' 
 #' @keywords internal
 ph_matrix_to_list <- function(M) {
@@ -283,30 +290,34 @@ ph_matrix_to_list <- function(M) {
 
 #' Is it a probability dataset? Function from MAPpoly.
 #'
-#' @param void internal function to be documented
+#' @param x object of class \code{mappoly.data}
 #' 
-#' @rdname utils
+#' @return TRUE/FALSE indicating if genotype probability information is present
+#' 
 #' 
 #' @keywords internal
 is.prob.data <- function(x){
   exists('geno', where = x)
 }
 
-#' Map functions. From MAPpoly
+#' Haldane map function. From MAPpoly
 #'
-#' @param void internal function to be documented
+#' @param d vector containing recombination fraction values
 #' 
-#' @rdname utils
+#' @return vector with genetic distances estimated with Haldane function
+#' 
 #' 
 #' @keywords internal
 mf_h <- function(d) 0.5 * (1 - exp(-d/50))
 
 #' Chi-square test. Function from MAPpoly.
 #'
-#' @param void internal function to be documented
+#' @param x data.frame containing dosage information
+#' @param ploidy integer defining the specie ploidy
+#' 
+#' @return vector with p-values for each marker
 #' 
 #' @importFrom stats chisq.test
-#' @rdname utils
 #' 
 #' @keywords internal
 mrk_chisq_test <- function(x, ploidy){
@@ -336,7 +347,6 @@ mrk_chisq_test <- function(x, ploidy){
 #' @importFrom reshape2 melt dcast
 #' @importFrom dplyr group_by filter arrange `%>%`
 #' 
-#' @rdname utils
 #' 
 #' @keywords internal
 dist_prob_to_class <- function(geno, prob.thres = 0.9) {
@@ -399,12 +409,11 @@ dist_prob_to_class <- function(geno, prob.thres = 0.9) {
 #'     e30906.
 #'     
 #' @importFrom stats dhyper
-#' @rdname utils
 #' 
 #' @keywords internal
 segreg_poly <- function(ploidy, d.p1, d.p2) {
   if (ploidy%%2 != 0)
-    stop("m must be an even number")
+    stop(safeError("m must be an even number"))
   p.dose <- numeric((ploidy + 1))
   p.names <- character((ploidy + 1))
   seg.p1 <- dhyper(x = c(0:(ploidy + 1)), m = d.p1, n = (ploidy - d.p1), k = ploidy/2)
@@ -433,6 +442,8 @@ segreg_poly <- function(ploidy, d.p1, d.p2) {
 #' converted into class \code{mappoly.data}
 #' @param ploidy the ploidy level     
 #'
+#' @return object of class \code{mappoly.map}
+#' 
 #' @author Marcelo Mollinari \email{mmollin@ncsu.edu}
 #'
 #' @references
@@ -447,7 +458,6 @@ segreg_poly <- function(ploidy, d.p1, d.p2) {
 #'     models, _G3: Genes, Genomes, Genetics_. 
 #'     \doi{10.1534/g3.119.400378}
 #'     
-#' @rdname utils
 #' 
 #' @keywords internal
 import_phased_maplist_from_polymapR <- function(maplist, 
@@ -493,9 +503,12 @@ import_phased_maplist_from_polymapR <- function(maplist,
 }
 
 #' prepare maps for plot - from MAPpoly
-#' @param void internal function to be documented
+#' @param input.map object of class \code{mappoly.map}
+#' @param config choose between 'best', 'all' or provide vector with defined configuration. 
+#' 'best' provide just the best estimated configuration. 'all' provides all possibles.
 #' 
-#' @rdname utils
+#' @return list containing phase and dosage information
+#' 
 #' 
 #' @keywords internal
 prepare_map <- function(input.map, config = "best"){
@@ -508,7 +521,7 @@ prepare_map <- function(input.map, config = "best"){
     i.lpc <- which.min(LOD.conf)
   } else if(config  ==  "all"){
     i.lpc <- seq_along(LOD.conf) } else if (config > length(LOD.conf)) {
-      stop("invalid linkage phase configuration")
+      stop(safeError("invalid linkage phase configuration"))
     } else i.lpc <- config
   ## Gathering marker positions
   map <- data.frame(mk.names = input.map$info$mrk.names,
@@ -542,10 +555,12 @@ prepare_map <- function(input.map, config = "best"){
 
 #' Map functions - from MAPpoly
 #'
-#' @param void internal function to be documented
+#' @param r vector with recombination fraction values
+#' 
 #' @keywords internal
 #' 
-#' @rdname utils
+#' @return vector with genetic distances
+#' 
 #' 
 #' @keywords internal
 imf_h <- function(r) {
@@ -555,13 +570,14 @@ imf_h <- function(r) {
 
 #' Extract the LOD Scores in a \code{'mappoly.map'} object
 #' Function from MAPpoly.
+#' 
 #' @param x an object of class \code{mappoly.map}
 #' @param sorted logical. if \code{TRUE}, the LOD Scores are displayed
 #'     in a decreasing order
+#'     
 #' @return a numeric vector containing the LOD Scores
 #' @keywords internal
 #' 
-#' @rdname utils
 #' 
 #' @keywords internal
 get_LOD <- function(x, sorted = TRUE) {
@@ -581,11 +597,11 @@ get_LOD <- function(x, sorted = TRUE) {
 #' @param L a list of configuration phases
 #'
 #' @param ploidy ploidy level
+#' 
 #'
 #' @return a matrix whose columns represent homologous chromosomes and
 #'     the rows represent markers
 #' 
-#' @rdname utils
 #' 
 #' @keywords internal
 ph_list_to_matrix <- function(L, ploidy) {
@@ -594,3 +610,121 @@ ph_list_to_matrix <- function(L, ploidy) {
     M[i, L[[i]]] <- 1
   M
 }
+
+#' Viewmap object sanity check 
+#' 
+#' 
+#' @param viewmap_obj an object of class \code{viewmap}
+#' 
+#' @return if consistent, returns 0. If not consistent, returns a 
+#'         vector with a number of tests, where \code{TRUE} indicates
+#'         a failed test.
+#'         
+#' 
+#' @author Cristiane Taniguti, \email{chtaniguti@tamu.edu}
+#' @keywords internal
+check_viewmap <- function(viewmap_obj){
+  test <- logical(7L)
+  names(test) <- 1:7
+  
+  test[1] <- length(viewmap_obj) != 6
+  test[2] <- any(names(viewmap_obj) != c("d.p1", "d.p2", "ph.p1", "ph.p2", "maps", "software"))
+  test[3] <- is.null(names(viewmap_obj$d.p1[[1]]))
+  test[4] <- is.null(rownames(viewmap_obj$ph.p1[[1]]))
+  test[5] <- any(sapply(viewmap_obj$maps, length) != 6)
+  test[6] <- is.null(viewmap_obj$software)
+  test[7] <- !inherits(viewmap_obj, "viewmap")
+  
+  if(any(as.logical(test)))
+    return(test)
+  else return(0)
+}
+
+#' viewqtl object sanity check 
+#' 
+#' 
+#' @param viewqtl_obj an object of class \code{viewqtl}
+#' 
+#' @return if consistent, returns 0. If not consistent, returns a 
+#'         vector with a number of tests, where \code{TRUE} indicates
+#'         a failed test.
+#'         
+#' 
+#' @author Cristiane Taniguti, \email{chtaniguti@tamu.edu}
+#' @keywords internal
+check_viewqtl <- function(viewqtl_obj){
+  test <- logical(10L)
+  names(test) <- 1:10
+  
+  test[3] <- any(names(viewqtl_obj$selected_mks) != c("LG", "mk", "pos"))
+  if(viewqtl_obj$software == "QTLpoly") {
+    test[1] <- length(viewqtl_obj) != 8
+    test[2] <- any(names(viewqtl_obj) != c("selected_mks", "qtl_info", "blups", "beta.hat", "profile", "effects", "probs", "software"))
+    test[4] <- any(names(viewqtl_obj$qtl_info) != c("LG", "Pos", "pheno", "Pos_lower", "Pos_upper", "Pval", "h2"))
+    test[5] <- any(names(viewqtl_obj$blups) != c("haplo", "pheno", "qtl", "u.hat")) 
+    test[6] <- any(names(viewqtl_obj$beta.hat) != c("pheno", "beta.hat"))
+    test[7] <- any(names(viewqtl_obj$profile) != c("pheno", "LOP"))
+    test[8] <- any(names(viewqtl_obj$effects) != c("pheno", "qtl.id", "haplo", "effect"))
+    test[9] <- length(dim(viewqtl_obj$probs)) != 3
+  } else if(viewqtl_obj$software == "diaQTL") {
+    test[1] <- length(viewqtl_obj) != 5
+    test[2] <- any(names(viewqtl_obj) != c("selected_mks", "qtl_info", "profile", "effects", "software"))
+    test[4] <- any(names(viewqtl_obj$qtl_info) != c("LG", "Pos", "pheno", "Pos_lower", "Pos_upper", "LL"))   
+    test[7] <- any(names(viewqtl_obj$profile) != c("pheno", "deltaDIC"))
+    test[8] <- any(names(viewqtl_obj$effects) != c("pheno", "haplo", "qtl.id", "effect", "type", "CI.lower", "CI.upper"))
+    test[5] <- test[6] <- test[9] <- FALSE
+  } else if(viewqtl_obj$software == "polyqtlR"){
+    test[1] <- length(viewqtl_obj) != 5
+    test[2] <- any(names(viewqtl_obj) != c("selected_mks", "qtl_info", "profile", "effects", "software"))
+    test[4] <- any(names(viewqtl_obj$qtl_info) != c("LG", "Pos", "pheno", "Pos_lower", "Pos_upper", "thresh"))   
+    test[7] <- any(names(viewqtl_obj$profile) != c("pheno", "LOD"))
+    test[8] <- any(names(viewqtl_obj$effects)[1:3] != c("pos", "pheno", "LG"))
+    test[5] <- test[6] <- test[9] <- FALSE
+  }
+  
+  test[10] <- !inherits(viewqtl_obj, "viewqtl")
+  
+  if(any(as.logical(test)))
+    return(test)
+  else return(0)
+}
+
+
+#' Viewpoly object sanity check 
+#' 
+#' 
+#' @param viewpoly_obj an object of class \code{viewpoly}
+#' 
+#' @return if consistent, returns 0. If not consistent, returns a 
+#'         vector with a number of tests, where \code{TRUE} indicates
+#'         a failed test.
+#'         
+#' @author Cristiane Taniguti, \email{chtaniguti@tamu.edu}
+#' @keywords internal
+check_viewpoly <- function(viewpoly_obj){
+  test <- logical(19L)
+  names(test) <- 1:19
+  
+  test[1] <- length(viewpoly_obj) != 8    
+  test[2] <- any(names(viewpoly_obj) != c("map", "qtl", "fasta", "gff3", "vcf", "align", "wig", "version"))
+  test[3] <- !inherits(viewpoly_obj, "viewpoly")
+  test[4] <- is.null(viewpoly_obj$version)
+  
+  if(is.null(viewpoly_obj$map)) test[5:10] <- FALSE else test[5:10] <- check_viewmap(viewpoly_obj$map)
+  
+  if(is.null(viewpoly_obj$qtl)) test[11:19] <- FALSE  else test[11:19] <- check_viewqtl(viewpoly_obj$qtl)
+  
+  if(any(as.logical(test)))
+    return(test)
+  else return(0)
+}
+
+# Collapse box
+jscode <- "
+shinyjs.collapse = function(boxid) {
+$('#' + boxid).closest('.box').find('[data-widget=collapse]').click();
+}
+"
+
+# Global variables to avoid NOTE
+globalVariables("js")

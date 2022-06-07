@@ -6,6 +6,7 @@
 #'
 #' @import shinydashboard
 #' @import shinyWidgets
+#' @importFrom shinyjs inlineCSS useShinyjs
 #' 
 #' @noRd 
 #'
@@ -13,19 +14,28 @@
 mod_qtl_view_ui <- function(id){
   ns <- NS(id)
   tagList(
+    useShinyjs(),
+    extendShinyjs(text = jscode, functions = "collapse"),
     fluidPage(
       verticalLayout(
         fluidRow(
           column(width = 12,
                  div(style = "position:absolute;right:1em;", 
-                     actionButton(ns("exit"), "Exit",icon("times-circle"), class = "btn btn-danger"), br(), br(),
-                     actionButton(ns("goGenes"), "Next",icon("arrow-circle-right"), class = "btn btn-success")
+                     div(
+                       actionButton(ns("goUploads"), "Go to Input data", icon("arrow-circle-left", verify_fa = FALSE), class = "btn btn-primary"),
+                       actionButton(ns("goGenes"), label = div("Go to Genome", icon("arrow-circle-right", verify_fa = FALSE)), class = "btn btn-primary"))
                  )
           ),
           tags$h2(tags$b("VIEWqtl")), br(), hr(),
           column(6,
+                 column(12,
+                        box(
+                          background = "light-blue",
+                          "Required inputs (*)", br(),
+                        )
+                 ),
                  column(6,
-                        box(width = 12, solidHeader = TRUE, status="info", title = h4("Select linkage group/s"),
+                        box(width = 12, solidHeader = TRUE, status="info", title = "Select linkage group/s *",
                             pickerInput(ns("group"),
                                         label = h6("Linkage group/s:"),
                                         choices = "This will be updated",
@@ -39,7 +49,7 @@ mod_qtl_view_ui <- function(id){
                         )
                  ),
                  column(6,
-                        box(width = 12, solidHeader = TRUE, status="info", title = h4("Select phenotype/s"),
+                        box(width = 12, solidHeader = TRUE, status="info", title = "Select phenotype/s *",
                             pickerInput(ns("phenotypes"),
                                         label = h6("Phenotype/s:"),
                                         choices = "This will be updated",
@@ -54,41 +64,82 @@ mod_qtl_view_ui <- function(id){
                  )
           ),
           column(12,
-                 box(width = 12, solidHeader = TRUE, collapsible = TRUE,  collapsed = FALSE, status="primary", title = h4("QTL profile"),
-                     column(2,
-                            downloadBttn(ns('bn_download'), style = "gradient", color = "royal")
-                     ),
-                     column(10,
-                            radioButtons(ns("fformat"), "File type", choices=c("png","tiff","jpeg","pdf"), selected = "png", inline = T)
-                     ), br(), 
+                 box(id = ns("box_profile"), width = 12, solidHeader = TRUE, collapsible = TRUE,  collapsed = FALSE, status="primary", title = actionLink(inputId = ns("profileID"), label = "QTL profile"),
+                     column(12,
+                            box(
+                              background = "light-blue",
+                              "* QTL analysis files or viewpoly object or example dataset (check `Input data` tab)"
+                            )
+                     ), 
+                     column(12,
+                            column(3,
+                                   useShinyjs(),
+                                   tags$head(tags$style(".butt{background-color:#add8e6; border-color: #add8e6; color: #337ab7;}")),
+                                   downloadButton(ns('bn_download'), "Download", class = "butt")
+                            ),
+                            column(3,
+                                   radioButtons(ns("fformat"), "File type", choices=c("png","tiff","jpeg","pdf"), selected = "png", inline = T)
+                            ),                     
+                            column(2,
+                                   numericInput(ns("width_profile"), "Width (mm)", value = 180),
+                            ),
+                            column(2,
+                                   numericInput(ns("height_profile"), "Height (mm)", value = 120),
+                            ),
+                            column(2,
+                                   numericInput(ns("dpi_profile"), "DPI", value = 300)
+                            )), br(), 
                      column(12,
                             hr(),
                             plotOutput(ns("plot_qtl"), 
                                        click=ns("plot_click"), brush = ns("plot_brush"))
                      ),
-                     box(width = 12, solidHeader = FALSE, collapsible = TRUE,  collapsed = TRUE, status="primary", title = h4("Effects"),
+                     box(id = ns("box_effects"), width = 12, solidHeader = FALSE, collapsible = TRUE,  collapsed = TRUE, status="primary", title = actionLink(inputId = ns("effectsID"), label = "Effects"),
+                         column(12,
+                                box(
+                                  background = "light-blue",
+                                  "* QTL analysis files or viewpoly object or example dataset (check `Input data` tab)", br(),
+                                  "* Selection of QTL/s (triangle/s at the bottom of QTL profile graphic)"
+                                )
+                         ), 
                          div(style = "position:absolute;right:3em;",
                              radioButtons(ns("effects_design"), "Design", 
                                           choices = c("Additive (bar)" = "bar", "Additive (circle)" = "circle", "Alleles combination" = "digenic"), 
-                                          selected = "bar", inline= T)
+                                          selected = "bar")
                          ), br(), br(), 
-                         column(2,
-                                downloadBttn(ns('bn_download_effects'), style = "gradient", color = "royal")
+                         column(3,
+                                downloadButton(ns('bn_download_effects'), "Download", class = "butt")
                          ),
-                         column(10,
+                         column(3,
                                 radioButtons(ns("fformat_effects"), "File type", choices=c("png","tiff","jpeg","pdf"), selected = "png", inline = T)
-                         ), br(),
+                         ),                     
+                         column(2,
+                                numericInput(ns("width_effects"), "Width (mm)", value = 180),
+                         ),
+                         column(2,
+                                numericInput(ns("height_effects"), "Height (mm)", value = 120),
+                         ),
+                         column(2,
+                                numericInput(ns("dpi_effects"), "DPI", value = 300)
+                         ), br(), 
                          column(12,
                                 hr(),
                                 uiOutput(ns("plot.ui"))
                          )
                      ), br(),
-                     box(width = 12, solidHeader = FALSE, collapsible = TRUE,  collapsed = TRUE, status="primary", title = h4("Progeny haplotypes"),
+                     box(id = ns("box_haplo"),width = 12, solidHeader = FALSE, collapsible = TRUE,  collapsed = TRUE, status="primary", title = actionLink(inputId = ns("haploID"), label = "Progeny haplotypes"),
                          column(12,
-                                actionBttn(ns("haplo_update"), style = "jelly", color = "royal",  size = "sm", label = "update available haplotypes", icon = icon("refresh")), 
+                                box(
+                                  background = "light-blue",
+                                  "* QTLpoly analysis files or viewpoly object or example dataset (check `Input data` tab)", br(),
+                                  "* Selection of QTL/s (triangle/s at the bottom of QTL profile graphic)"
+                                )
+                         ), 
+                         column(12,
+                                actionBttn(ns("haplo_update"), style = "jelly", color = "royal",  size = "sm", label = "update available haplotypes", icon = icon("refresh", verify_fa = FALSE)), 
                                 br(), br(),
                                 pickerInput(ns("haplo"),
-                                            label = h6("Select haplotypes"),
+                                            label = h6("Select haplotypes*"),
                                             choices = "Click on `update available haplotype` to update",
                                             selected = "Click on `update available haplotype` to update",
                                             options = pickerOptions(
@@ -100,24 +151,51 @@ mod_qtl_view_ui <- function(id){
                                               dropdownAlignRight = TRUE
                                             ), 
                                             multiple = TRUE), br(),
-                                actionBttn(ns("haplo_submit"), style = "jelly", color = "royal",  size = "sm", label = "submit selected haplotypes", icon = icon("share-square")), 
+                                actionBttn(ns("haplo_submit"), style = "jelly", color = "royal",  size = "sm", label = "submit selected haplotypes*", icon = icon("share-square", verify_fa = FALSE)), 
                                 br(), hr()),
-                         column(2,
-                                downloadBttn(ns('bn_download_haplo'), style = "gradient", color = "royal")
+                         column(3,
+                                downloadButton(ns('bn_download_haplo'), "Download", class = "butt")
                          ),
-                         column(10,
+                         column(3,
                                 radioButtons(ns("fformat_haplo"), "File type", choices=c("png","tiff","jpeg","pdf"), selected = "png", inline = T)
-                         ), br(),
+                         ),                     
+                         column(2,
+                                numericInput(ns("width_haplo"), "Width (mm)", value = 180),
+                         ),
+                         column(2,
+                                numericInput(ns("height_haplo"), "Height (mm)", value = 120),
+                         ),
+                         column(2,
+                                numericInput(ns("dpi_haplo"), "DPI", value = 300)
+                         ), br(), 
                          column(12,
                                 hr(),
                                 uiOutput(ns("plot_haplo.ui"))
                          )
                      ),
-                     box(width = 12, solidHeader = FALSE, collapsible = TRUE,  collapsed = TRUE, status="primary", title = h4("Breeding values"),
-                         DT::dataTableOutput(ns("breeding_values"))
-                     ),
-                     box(width = 12, solidHeader = FALSE, collapsible = TRUE,  collapsed = TRUE, status="primary", title = h4("QTL summary"),
-                         DT::dataTableOutput(ns("info"))
+                     box(id = ns("box_bree"), width = 12, solidHeader = FALSE, collapsible = TRUE,  collapsed = TRUE, status="primary", title = actionLink(inputId = ns("breeID"), label = "Breeding values"),
+                         column(12,
+                                box(
+                                  background = "light-blue",
+                                  "* QTLpoly analysis files or viewpoly object or example dataset (check `Input data` tab)", br(),
+                                  "* Selection of QTL/s (triangle/s at the bottom of QTL profile graphic)"
+                                )
+                         ), 
+                         column(12,
+                                DT::dataTableOutput(ns("breeding_values"))
+                         )
+                     ), br(), br(),
+                     box(id = ns("box_summary"),width = 12, solidHeader = FALSE, collapsible = TRUE,  collapsed = TRUE, status="primary", title = actionLink(inputId = ns("summaryID"), label = "QTL summary"),
+                         column(12,
+                                box(
+                                  background = "light-blue",
+                                  "* QTL analysis files or viewpoly object or example dataset (check `Input data` tab)", br(),
+                                  "* Selection of QTL/s (triangle/s at the bottom of QTL profile graphic)"
+                                )
+                         ), 
+                         column(12,
+                                DT::dataTableOutput(ns("info"))
+                         )
                      )
                  )
           )
@@ -131,6 +209,7 @@ mod_qtl_view_ui <- function(id){
 #'
 #' @importFrom ggpubr ggarrange
 #' @import shinydashboard
+#' @importFrom shinyjs js
 #' 
 #' @noRd 
 mod_qtl_view_server <- function(input, output, session, 
@@ -138,8 +217,25 @@ mod_qtl_view_server <- function(input, output, session,
                                 parent_session){
   ns <- session$ns
   
-  observeEvent(input$exit, {
-    stopApp()
+  #Collapse boxes
+  observeEvent(input$profileID, {
+    js$collapse(ns("box_profile"))
+  })
+  
+  observeEvent(input$effectsID, {
+    js$collapse(ns("box_effects"))
+  })
+  
+  observeEvent(input$haploID, {
+    js$collapse(ns("box_haplo"))
+  })
+  
+  observeEvent(input$breeID, {
+    js$collapse(ns("box_bree"))
+  })
+  
+  observeEvent(input$summaryID, {
+    js$collapse(ns("box_summary"))
   })
   
   observe({
@@ -154,10 +250,13 @@ mod_qtl_view_server <- function(input, output, session,
       group_choices <- as.list("Upload map or QTL data in `upload` session.")
       names(group_choices) <-  "Upload map or QTL data in `upload` session."
     }
+    
+    if(length(group_choices) < 5) the_choice <- group_choices[[1]] else the_choice <- group_choices[[5]]
+    
     updatePickerInput(session, "group",
                       label="Linkage group/s:",
                       choices = group_choices,
-                      selected= group_choices[[1]])
+                      selected= the_choice)
     
     
     # Dynamic QTL
@@ -182,30 +281,48 @@ mod_qtl_view_server <- function(input, output, session,
                       selected = "genes")
   })
   
+  observeEvent(input$goUploads, {
+    updateTabsetPanel(session = parent_session, inputId = "viewpoly",
+                      selected = "upload")
+  })
+  
   qtl.data <- reactive({
-    if(!is.null(loadQTL())){
-      idx <- which(unique(loadQTL()$profile$pheno) %in% input$phenotypes)
+    validate(
+      need(length(input$phenotypes) != 0, "Select at least one phenotype"),
+      need(length(input$group) != 0, "Select at least one linkage group"),
+      need(!is.null(loadQTL()), "Upload the QTL information in upload session to access this feature.")
+    )
+    idx <- which(unique(loadQTL()$profile$pheno) %in% input$phenotypes)
+    
+    withProgress(message = 'Working:', value = 0, {
+      incProgress(0.3, detail = paste("building graphic..."))
       pl <- plot_profile(profile = loadQTL()$profile, 
                          qtl_info = loadQTL()$qtl_info, 
                          selected_mks = loadQTL()$selected_mks,
                          pheno.col = idx,
                          lgs.id = as.numeric(input$group), 
                          by_range=F, plot = F)
-    } else
-      stop("Upload the QTL information in upload session to access this feature.")
+    })
   })
   
   output$plot_qtl <- renderPlot({
-    only_plot_profile(pl.in = qtl.data())
+    withProgress(message = 'Working:', value = 0, {
+      incProgress(0.3, detail = paste("building graphic..."))
+      only_plot_profile(pl.in = qtl.data())
+    })
   })
   
   effects.data <- reactive({
-    if(!is.null(loadQTL())){
-      if(!is.null(input$plot_brush)){
-        df <- brushedPoints(qtl.data()[[2]], input$plot_brush, xvar = "x", yvar = "y.dat")
-      } else {
-        stop("Select a point or region on QTL profile graphic.") 
-      }
+    validate(
+      need(!is.null(loadQTL()), "Upload the QTL information in upload session to access this feature."),
+      need(!is.null(input$plot_brush), "Select at least one triangle on the bottom of the QTL profile graphic. The triangles refer to QTL peaks detected. You can click and brush your cursor to select more than one.")
+    )
+    df <- try(brushedPoints(qtl.data()[[2]], input$plot_brush, xvar = "x", yvar = "y.dat"))
+    validate(
+      need(dim(df)[1] > 0, "Select at least one triangle on the bottom of the QTL profile graphic. The triangles refer to QTL peaks detected. You can click and brush your cursor to select more than one.")
+    )
+    withProgress(message = 'Working:', value = 0, {
+      incProgress(0.5, detail = paste("Getting data..."))
       data <- data_effects(qtl_info = loadQTL()$qtl_info, 
                            effects = loadQTL()$effects,
                            pheno.col = as.character(df$Trait), 
@@ -214,8 +331,7 @@ mod_qtl_view_server <- function(input, output, session,
                            groups = as.numeric(input$group),
                            software = loadQTL()$software,
                            design = input$effects_design)
-    } else 
-      stop("Upload the QTL information in upload session to access this feature.")
+    })
   })
   
   output$effects <- renderPlot({
@@ -225,29 +341,31 @@ mod_qtl_view_server <- function(input, output, session,
     })
   })
   
+  
   plotHeight <- reactive({
-    if(!is.null(loadQTL())){
-      if(!is.null(input$plot_brush)){
-        dframe <- brushedPoints(qtl.data()[[2]], input$plot_brush, xvar = "x", yvar = "y.dat")
-      } else {
-        stop("Select a point or region on QTL profile graphic.")
-      }
-      counts <- nrow(dframe)
-      counts <- ceiling(counts/4)
+    
+    validate(
+      need(!is.null(loadQTL()), "Upload the QTL information in upload session to access this feature."),
+      need(!is.null(input$plot_brush), "Select at least one triangle on the bottom of the QTL profile graphic. The triangles refer to QTL peaks detected. You can click and brush your cursor to select more than one.")
+    )
+    dframe <- try(brushedPoints(qtl.data()[[2]], input$plot_brush, xvar = "x", yvar = "y.dat"))
+    validate(
+      need(!inherits(dframe, "try-error"), "Select at least one triangle on the bottom of the QTL profile graphic. The triangles refer to QTL peaks detected. You can click and brush your cursor to select more than one.")
+    )
+    counts <- nrow(dframe)
+    counts <- ceiling(counts/4)
+    if(counts == 0) counts <- 1
+    if(loadQTL()$software == "polyqtlR") {
+      size <- counts*650 
+    } else if(input$effects_design == "bar" | input$effects_design == "digenic"){ 
+      size <- counts*350
+    } else if(input$effects_design == "circle"){
+      counts <- length(unique(dframe$LG))
+      counts <- ceiling(counts/2)
       if(counts == 0) counts <- 1
-      if(loadQTL()$software == "polyqtlR") {
-        size <- counts*650 
-      } else if(input$effects_design == "bar" | input$effects_design == "digenic"){ 
-        size <- counts*350
-      } else if(input$effects_design == "circle"){
-        counts <- length(unique(dframe$LG))
-        counts <- ceiling(counts/2)
-        if(counts == 0) counts <- 1
-        size <- counts*500
-      }
-      size
-    } else 
-      stop("Upload the QTL information in upload session to access this feature.")
+      size <- counts*500
+    }
+    size
   })
   
   output$plot.ui <- renderUI({
@@ -305,10 +423,12 @@ mod_qtl_view_server <- function(input, output, session,
   })
   
   haplo_data <- eventReactive(input$haplo_submit, {
-    if(all(input$haplo == paste0("Feature not implemented for software: ", loadQTL()$software))) stop(paste0("Feature not implemented for software: ", loadQTL()$software))
-    if(all(input$haplo == "Click on `update available haplotype` to update")) stop("Click on `update available haplotype` to update")
-    if(all(input$haplo == "Select QTL in the profile graphic to update")) stop("Select QTL in the profile graphic to update")
-    if(all(input$haplo == "Select `bar` design to access this feature.")) stop("Select `bar` design to access this feature.")
+    validate(
+      need(all(input$haplo != paste0("Feature not implemented for software: ", loadQTL()$software)), paste0("Feature not implemented for software: ", loadQTL()$software)),
+      need(all(input$haplo != "Click on `update available haplotype` to update"), "Click on `update available haplotype` to update"),
+      need(all(input$haplo != "Select QTL in the profile graphic to update"), "Select QTL in the profile graphic to update"),
+      need(all(input$haplo != "Select `bar` design to access this feature."), "Select `bar` design to access this feature.")
+    )
     p <- select_haplo(input$haplo, loadQTL()$probs, loadQTL()$selected_mks, effects.data())
     counts <- ceiling(length(p)/3)
     if(counts == 0) counts <- 1
@@ -331,55 +451,53 @@ mod_qtl_view_server <- function(input, output, session,
   })
   
   output$info <- DT::renderDataTable(server = FALSE, {
-    if(!is.null(loadQTL())){
-      if(!is.null(input$plot_brush)){
-        dframe <- brushedPoints(qtl.data()[[2]], input$plot_brush, xvar = "x", yvar = "y.dat")
-      } else {
-        stop("Select a point or region on graphic.")
-      }
-      dframe <- dframe[,-c(dim(dframe)[2]-1,dim(dframe)[2])]
-      if(loadQTL()$software == "QTLpoly"){
-        colnames(dframe)[c(2,4,5,6,7)] <- c("Linkage group", "Lower interval (cM)", "Upper interval (cM)", "p-value", "h2")
-      } else if(loadQTL()$software == "diaQTL") {
-        colnames(dframe)[c(2,4,5,6)] <- c("Linkage group", "Lower interval (cM)", "Upper interval (cM)", "LL")
-      } else if(loadQTL()$software == "polyqtlR"){
-        dframe <- dframe[,-c(4,5)]
-        colnames(dframe)[c(2,4)] <- c("Linkage group", "Threshold")
-      }
-      DT::datatable(dframe, extensions = 'Buttons',
-                    options = list(
-                      dom = 'Bfrtlp',
-                      buttons = c('copy', 'csv', 'excel', 'pdf')
-                    ),
-                    class = "display")
-    } else 
-      stop("Upload the QTL information in upload session to access this feature.")
+    validate(
+      need(!is.null(loadQTL()), "Upload the QTL information in upload session to access this feature."),
+      need(!is.null(input$plot_brush), "Select at least one triangle on the bottom of the QTL profile graphic. The triangles refer to QTL peaks detected. You can click and brush your cursor to select more than one.")
+    )
+    dframe <- try(brushedPoints(qtl.data()[[2]], input$plot_brush, xvar = "x", yvar = "y.dat"))
+    validate(
+      need(!inherits(dframe, "try-error"), "Select at least one triangle on the bottom of the QTL profile graphic. The triangles refer to QTL peaks detected. You can click and brush your cursor to select more than one.")
+    )
+    dframe <- dframe[,-c(dim(dframe)[2]-1,dim(dframe)[2])]
+    if(loadQTL()$software == "QTLpoly"){
+      colnames(dframe)[c(2,4,5,6,7)] <- c("Linkage group", "Lower interval (cM)", "Upper interval (cM)", "p-value", "h2")
+    } else if(loadQTL()$software == "diaQTL") {
+      colnames(dframe)[c(2,4,5,6)] <- c("Linkage group", "Lower interval (cM)", "Upper interval (cM)", "LL")
+    } else if(loadQTL()$software == "polyqtlR"){
+      dframe <- dframe[,-c(4,5)]
+      colnames(dframe)[c(2,4)] <- c("Linkage group", "Threshold")
+    }
+    DT::datatable(dframe, extensions = 'Buttons',
+                  options = list(
+                    dom = 'Bfrtlp',
+                    buttons = c('copy', 'csv', 'excel', 'pdf')
+                  ),
+                  class = "display")
   })
   
   # Breeding values
   output$breeding_values <- DT::renderDataTable(server = FALSE, {
-    if(!is.null(loadQTL())){
-      if(loadQTL()$software == "QTLpoly"){
-        if(!is.null(input$plot_brush)){
-          dframe <- brushedPoints(qtl.data()[[2]], input$plot_brush, xvar = "x", yvar = "y.dat")
-        } else {
-          stop("Select a point or region on graphic.")
-        }
-        
-        pos <- split(dframe$`Position (cM)`, dframe$Trait)
-        dt <- breeding_values(loadQTL()$qtl_info, loadQTL()$probs, 
-                              loadQTL()$selected_mks, loadQTL()$blups, 
-                              loadQTL()$beta.hat, pos)
-        rownames(dt) <- NULL
-        DT::datatable(dt, extensions = 'Buttons',
-                      options = list(
-                        dom = 'Bfrtlp',
-                        buttons = c('copy', 'csv', 'excel', 'pdf')
-                      ),
-                      class = "display")
-      } else stop(paste("Feature not implemented for software:",loadQTL()$software))
-    } else 
-      stop("Upload the QTL information in upload session to access this feature.")
+    validate(
+      need(!is.null(loadQTL()), "Upload the QTL information in upload session to access this feature."),
+      need(loadQTL()$software == "QTLpoly", paste("Feature not implemented for software:",loadQTL()$software)),
+      need(!is.null(input$plot_brush), "Select at least one triangle on the bottom of the QTL profile graphic. The triangles refer to QTL peaks detected. You can click and brush your cursor to select more than one.")
+    )
+    dframe <- try(brushedPoints(qtl.data()[[2]], input$plot_brush, xvar = "x", yvar = "y.dat"))
+    validate(
+      need(!inherits(dframe, "try-error"), "Select at least one triangle on the bottom of the QTL profile graphic. The triangles refer to QTL peaks detected. You can click and brush your cursor to select more than one.")
+    )
+    pos <- split(dframe$`Position (cM)`, dframe$Trait)
+    dt <- breeding_values(loadQTL()$qtl_info, loadQTL()$probs, 
+                          loadQTL()$selected_mks, loadQTL()$blups, 
+                          loadQTL()$beta.hat, pos)
+    rownames(dt) <- NULL
+    DT::datatable(dt, extensions = 'Buttons',
+                  options = list(
+                    dom = 'Bfrtlp',
+                    buttons = c('copy', 'csv', 'excel', 'pdf')
+                  ),
+                  class = "display")
   })
   
   # Download profile
@@ -387,7 +505,7 @@ mod_qtl_view_server <- function(input, output, session,
   fn_downloadname <- reactive({
     seed <- sample(1:1000,1)
     if(input$fformat=="png") filename <- paste0("profile","_",seed,".png")
-    if(input$fformat=="tiff") filename <- paste0("profile","_",seed,".tif")
+    if(input$fformat=="tiff") filename <- paste0("profile","_",seed,".tiff")
     if(input$fformat=="jpeg") filename <- paste0("profile","_",seed,".jpg")
     if(input$fformat=="pdf") filename <- paste0("profile","_",seed,".pdf")
     return(filename)
@@ -398,8 +516,18 @@ mod_qtl_view_server <- function(input, output, session,
   {
     p <- only_plot_profile(pl.in = qtl.data())
     ggsave(p, filename = fn_downloadname(), 
-           width = 12.7, height = 8, units = "in")    
+           width = input$width_profile, height = input$height_profile, units = "mm", dpi = input$dpi_profile)    
   }
+  
+  observe({
+    if (!is.null(loadQTL()) & input$width_profile > 1 & input$height_profile > 1 & input$dpi_profile > 1) {
+      Sys.sleep(1)
+      # enable the download button
+      shinyjs::enable("bn_download")
+    } else {
+      shinyjs::disable("bn_download")
+    }
+  })
   
   # download handler
   output$bn_download <- downloadHandler(
@@ -407,6 +535,7 @@ mod_qtl_view_server <- function(input, output, session,
     content = function(file) {
       fn_download()
       file.copy(fn_downloadname(), file, overwrite=T)
+      file.remove(fn_downloadname())
     }
   )
   
@@ -416,7 +545,7 @@ mod_qtl_view_server <- function(input, output, session,
     
     seed <- sample(1:1000,1)
     if(input$fformat_effects=="png") filename <- paste0("effects","_",seed,".png")
-    if(input$fformat_effects=="tiff") filename <- paste0("effects","_",seed,".tif")
+    if(input$fformat_effects=="tiff") filename <- paste0("effects","_",seed,".tiff")
     if(input$fformat_effects=="jpeg") filename <- paste0("effects","_",seed,".jpg")
     if(input$fformat_effects=="pdf") filename <- paste0("effects","_",seed,".pdf")
     return(filename)
@@ -425,11 +554,12 @@ mod_qtl_view_server <- function(input, output, session,
   # download 
   fn_download_effects <- function()
   {
-    if(!is.null(input$plot_brush)){
-      df <- brushedPoints(qtl.data()[[2]], input$plot_brush, xvar = "x", yvar = "y.dat")
-    } else {
-      stop("Select a point or region on QTL profile graphic.") 
-    }
+    validate(
+      need(!is.null(input$plot_brush), "Select a point or region on QTL profile graphic.")
+    )
+    
+    df <- brushedPoints(qtl.data()[[2]], input$plot_brush, xvar = "x", yvar = "y.dat")
+    
     data <- data_effects(qtl_info = loadQTL()$qtl_info, 
                          effects = loadQTL()$effects,
                          pheno.col = as.character(df$Trait), 
@@ -441,8 +571,28 @@ mod_qtl_view_server <- function(input, output, session,
     
     plots <- plot_effects(data, software = loadQTL()$software, design = input$effects_design)
     
-    ggsave(plots, filename = fn_downloadname_effects(), height = plotHeight()/3, width = plotHeight(),units = "mm", bg = "white")    
+    ggsave(plots, filename = fn_downloadname_effects(), height = input$height_effects, 
+           width = input$width_effects, units = "mm", bg = "white", dpi = input$dpi_effects)    
   }
+  
+  shinyjs::disable("bn_download_effects")
+  
+  # To make observeEvent watch more than one input
+  toListen <- reactive({
+    list(input$plot_brush, input$plot_brush, input$width_effects, input$height_effects, input$dpi_effects)
+  })
+  
+  observeEvent(toListen(),{
+    df <- brushedPoints(qtl.data()[[2]], input$plot_brush, xvar = "x", yvar = "y.dat")
+    
+    if (dim(df)[1] > 0 & !is.null(loadQTL()) & !is.null(input$plot_brush) & input$width_effects > 1 & input$height_effects > 1 & input$dpi_effects > 1) {
+      Sys.sleep(1)
+      # enable the download button
+      shinyjs::enable("bn_download_effects")
+    } else {
+      shinyjs::disable("bn_download_effects")
+    }
+  })
   
   # download handler
   output$bn_download_effects <- downloadHandler(
@@ -450,16 +600,18 @@ mod_qtl_view_server <- function(input, output, session,
     content = function(file) {
       fn_download_effects()
       file.copy(fn_downloadname_effects(), file, overwrite=T)
+      file.remove(fn_downloadname_effects())
     }
   )
   
   # Download haplotypes
+  shinyjs::disable("bn_download_haplo")
   # create filename
   fn_downloadname_haplo <- reactive({
     
     seed <- sample(1:1000,1)
     if(input$fformat_haplo=="png") filename <- paste0("haplotypes","_",seed,".png")
-    if(input$fformat_haplo=="tiff") filename <- paste0("haplotypes","_",seed,".tif")
+    if(input$fformat_haplo=="tiff") filename <- paste0("haplotypes","_",seed,".tiff")
     if(input$fformat_haplo=="jpeg") filename <- paste0("haplotypes","_",seed,".jpg")
     if(input$fformat_haplo=="pdf") filename <- paste0("haplotypes","_",seed,".pdf")
     return(filename)
@@ -471,8 +623,19 @@ mod_qtl_view_server <- function(input, output, session,
     p <- select_haplo(input$haplo, loadQTL()$probs, loadQTL()$selected_mks, effects.data())
     plots <- ggarrange(plotlist = p, ncol = 3, common.legend = TRUE)
     
-    ggsave(plots, filename = fn_downloadname_haplo(), height = plotHeight()/2, width = plotHeight(),units = "mm", bg = "white")    
+    ggsave(plots, filename = fn_downloadname_haplo(), height = input$height_haplo, 
+           width = input$width_haplo, units = "mm", bg = "white", dpi = input$dpi_haplo)    
   }
+  
+  observe({
+    if (input$haplo_submit & length(grep("Trait",input$haplo)) > 0 & !is.null(input$plot_brush) & input$height_haplo > 1 & input$width_haplo > 1 & input$dpi_haplo > 1) {
+      Sys.sleep(1)
+      # enable the download button
+      shinyjs::enable("bn_download_haplo")
+    } else {
+      shinyjs::disable("bn_download_haplo")
+    }
+  })
   
   # download handler
   output$bn_download_haplo <- downloadHandler(
@@ -480,6 +643,7 @@ mod_qtl_view_server <- function(input, output, session,
     content = function(file) {
       fn_download_haplo()
       file.copy(fn_downloadname_haplo(), file, overwrite=T)
+      file.remove(fn_downloadname_haplo())
     }
   )
 }
