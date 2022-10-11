@@ -76,7 +76,7 @@ mod_genes_view_ui <- function(id){
                    downloadButton(ns('bn_download'), "Download", class = "butt")
             ),
             column(3,
-                   radioButtons(ns("fformat"), "File type", choices=c("png","tiff","jpeg","pdf"), selected = "png", inline = T)
+                   radioButtons(ns("fformat"), "File type", choices=c("png","tiff","jpeg","pdf", "RData"), selected = "png", inline = T)
             ),                     
             column(2,
                    numericInput(ns("width_profile"), "Width (mm)", value = 180),
@@ -103,7 +103,7 @@ mod_genes_view_ui <- function(id){
                    downloadButton(ns('bn_download_phi'), "Download", class = "butt")
             ),
             column(3,
-                   radioButtons(ns("fformat_phi"), "File type", choices=c("png","tiff","jpeg","pdf"), selected = "png", inline = T)
+                   radioButtons(ns("fformat_phi"), "File type", choices=c("png","tiff","jpeg","pdf", "RData"), selected = "png", inline = T)
             ),                     
             column(2,
                    numericInput(ns("width_phi"), "Width (mm)", value = 180),
@@ -163,12 +163,12 @@ mod_genes_view_ui <- function(id){
 #' @importFrom plotly event_data layout
 #' @importFrom shinyjs inlineCSS js
 #' @importFrom dplyr `%>%`
+#' @importFrom curl has_internet
 #'
 #' @noRd 
 mod_genes_view_server <- function(input, output, session, 
                                   loadMap, loadQTL,
                                   loadJBrowse_fasta, loadJBrowse_gff3, loadJBrowse_vcf, loadJBrowse_align, loadJBrowse_wig, 
-                                  loadExample,
                                   parent_session){
   ns <- session$ns
   
@@ -365,7 +365,6 @@ mod_genes_view_server <- function(input, output, session,
   
   # Open JBrowser server 
   button <- eventReactive(input$create_server, {
-    
     if(!is.null(loadJBrowse_fasta())){
       if(loadJBrowse_fasta() != "") {
         path.fa <- loadJBrowse_fasta()
@@ -377,8 +376,12 @@ mod_genes_view_server <- function(input, output, session,
         path.gff <- loadJBrowse_gff3()
         if(grepl("^http", loadJBrowse_gff3())){
           gff.dir <- tempfile()
-          download.file(loadJBrowse_gff3(), destfile = gff.dir)
-          gff <- vroom(gff.dir, delim = "\t", skip = 3, col_names = F, progress = FALSE, show_col_types = FALSE)
+          if(has_internet()){
+            download.file(loadJBrowse_gff3(), destfile = gff.dir)
+            gff <- vroom(gff.dir, delim = "\t", skip = 3, col_names = F, progress = FALSE, show_col_types = FALSE)
+          } else {
+            print("No internet conection.")
+          }
         } else {
           gff <- vroom(loadJBrowse_gff3(), delim = "\t", skip = 3, col_names = F, progress = FALSE, show_col_types = FALSE)
         }
@@ -404,31 +407,8 @@ mod_genes_view_server <- function(input, output, session,
     } else path.wig <- NULL
     
     validate(
-      need(is.null(loadJBrowse_fasta()) & !is.null(loadExample()), "Upload the genome information in upload session to access this feature.")
+      need(!is.null(path.fa), "Upload the genome information in upload session to access this feature.")
     )
-    
-    path.fa <- loadExample()$fasta
-    path.gff <- loadExample()$gff3
-    
-    ext.list <- strsplit(c(loadExample()$fasta,loadExample()$gff3), "[.]")
-    
-    ext <- sapply(ext.list, function(x) {
-      if(x[length(x)] == "gz") paste0(x[length(x)-1], ".",x[length(x)])
-    })
-    
-    # fasta.dir <- paste0(tempfile(),".", ext[1])
-    # download.file(loadExample()$fasta, destfile = fasta.dir)
-    # download.file(paste0(loadExample()$fasta, ".fai"), destfile = paste0(fasta.dir, ".fai"))
-    # path.fa <- fasta.dir
-    
-    gff.dir <- paste0(tempfile(),".", ext[2])
-    download.file(loadExample()$gff3, destfile = gff.dir)
-    #path.gff <- gff.dir
-    
-    gff <- vroom(gff.dir, delim = "\t", skip = 3, col_names = F, progress = FALSE, show_col_types = FALSE)
-    # Add other tracks
-    # variants_track <- track_variant()
-    # alignments_track <- track_alignments()
     
     if(!grepl("^http", path.fa)){
       data_server <- serve_data(dirname(path.fa), port = 5000)
@@ -592,6 +572,7 @@ mod_genes_view_server <- function(input, output, session,
     df <- df %>% filter(seqid == unique(mks$g.chr) & start > mks.range.1 & end < mks.range.2)
     DT::datatable(df, extensions = 'Buttons',
                   options = list(
+                    scrollX = TRUE,
                     dom = 'Bfrtlp',
                     buttons = c('copy', 'csv', 'excel', 'pdf')
                   ),
@@ -607,6 +588,7 @@ mod_genes_view_server <- function(input, output, session,
     if(input$fformat=="tiff") filename <- paste0("profile","_",seed,".tiff")
     if(input$fformat=="jpeg") filename <- paste0("profile","_",seed,".jpg")
     if(input$fformat=="pdf") filename <- paste0("profile","_",seed,".pdf")
+    if(input$fformat=="RData") filename <- paste0("profile","_",seed,".RData")
     return(filename)
   })
   
@@ -621,9 +603,12 @@ mod_genes_view_server <- function(input, output, session,
                        range.max = input$range[2], 
                        by_range=T, 
                        software = loadQTL()$software)
-    ggsave(pl, filename = fn_downloadname(), 
-           width = input$width_profile, height = input$height_profile, 
-           units = "mm", dpi = input$dpi_profile)    
+    
+    if(input$fformat!="RData"){
+      ggsave(pl, filename = fn_downloadname(), 
+             width = input$width_profile, height = input$height_profile, 
+             units = "mm", dpi = input$dpi_profile)    
+    } else save(pl, file = fn_downloadname())
   }
   
   observe({
@@ -653,6 +638,7 @@ mod_genes_view_server <- function(input, output, session,
     if(input$fformat_phi=="tiff") filename <- paste0("linkageXphisical","_",seed,".tiff")
     if(input$fformat_phi=="jpeg") filename <- paste0("linkageXphisical","_",seed,".jpg")
     if(input$fformat_phi=="pdf") filename <- paste0("linkageXphisical","_",seed,".pdf")
+    if(input$fformat_phi=="RData") filename <- paste0("linkageXphisical","_",seed,".RData")
     return(filename)
   })
   
@@ -674,9 +660,11 @@ mod_genes_view_server <- function(input, output, session,
       labs(x = "Linkage map (cM)", y = "Reference genome (Mb)") +
       theme_bw() + theme(legend.position = "none") 
     
-    ggsave(p, filename = fn_downloadname_phi(), 
-           width = input$width_phi, height = input$height_phi, 
-           units = "mm", dpi = input$dpi_phi)    
+    if(input$fformat_phi!="RData"){
+      ggsave(p, filename = fn_downloadname_phi(), 
+             width = input$width_phi, height = input$height_phi, 
+             units = "mm", dpi = input$dpi_phi)    
+    } else save(p, file = fn_downloadname_phi())
   }
   
   observe({

@@ -23,4 +23,19 @@ Main modifications made during JOSS review:
 * Functional testing added
 * Disable the download buttons when image parameters are not reliable
 * Title of boxes are now also collapsible
-This release creates a Zenodo copy of the repository, in order to have a software DOI pre-JOSS publication.
+
+# viewpoly 0.3.0
+
+* Support for diaQTL multi-population evaluation
+* User-defined parents names in effects graphics
+* Download of plots with RData format
+* Docker image available
+* Allow to exclude haplotypes from haplotypes probability view in VIEWqtl module
+* Bug fixed to upload genome through genome link
+* Bug fixed to upload viewpoly object
+
+# viewpoly 0.3.1
+
+* Avoid errors if user has not internet connection
+* Inform number and ID of individuals selected by haplotypes
+* README updated to include new vignette for server version (available at brach publishing_data)

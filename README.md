@@ -5,6 +5,7 @@
 [![R-universe PolyVerse Status Badge](https://polyploids.r-universe.dev/badges/viewpoly)](https://polyploids.r-universe.dev/badges/viewpoly)
 [![codecov](https://codecov.io/github/mmollina/viewpoly/branch/main/graphs/badge.svg)](https://codecov.io/github/mmollina/viewpoly)
 [![CRAN_monthly_downloads](https://cranlogs.r-pkg.org/badges/viewpoly)](https://cranlogs.r-pkg.org/badges/viewpoly)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.04242/status.svg)](https://doi.org/10.21105/joss.04242)
 <!-- badges: end -->
   
 # VIEWpoly <img src="https://user-images.githubusercontent.com/7572527/145726577-7b01d48b-ca1d-446b-b9c8-aff8c3c9877b.png" align="right" width="230"/>
@@ -14,7 +15,11 @@
 
 ### Quick Start
 
-The quickest way of accessing `VIEWpoly` is [here](https://cris-taniguti.shinyapps.io/viewpoly/). However, our shinyapps.io does not upload files larger than 1GB. If you have larger datasets, you will need to run `VIEWpoly` locally.
+The quickest way of accessing `VIEWpoly` is [here](https://cris-taniguti.shinyapps.io/viewpoly/). However, our shinyapps.io does not upload files larger than 1GB. If you have larger datasets, you will need to install and run `VIEWpoly` locally.
+
+### Installation
+
+* From CRAN
 
 You can run `VIEWpoly` locally installing the package and accessing the graphical interface through a web browser. To use the stable version, please install the package from CRAN:
 
@@ -22,6 +27,8 @@ You can run `VIEWpoly` locally installing the package and accessing the graphica
 install.packages("viewpoly")
 viewpoly::run_app()
 ```
+
+* From GitHub
 
 If you want to use the latest development version, go ahead and install `VIEWpoly` from our Github repository:
 
@@ -32,6 +39,19 @@ viewpoly::run_app()
 ```
 
 NOTE: Windows users may need to install the `Rtools` before compiling the package from source (development version).
+
+* From Docker Hub
+
+You can also access `VIEWpoly` though the Docker image:
+
+```{bash}
+docker pull cristaniguti/viewpoly:0.2.1  
+docker run --rm -e USERID=$(id -u) -e GROUPID=$(id -g) -p 8085:80 -e DISABLE_AUTH=true cristaniguti/viewpoly:0.2.1
+```
+
+This will make the container available in port 8085 (choose other if you prefer). After, you just need to go to your favorite browser and search for <your_localhost>:8085 (example: 127.0.0.1:8085). That is it! Everything you need is there.
+
+### Input data
 
 The `Input data` tab has options for several types of inputs. You can upload directly outputs from:
 
@@ -55,15 +75,17 @@ It is optional to upload also:
 
 ### Documentation
 
-Access the [tutorial](https://cristianetaniguti.github.io/viewpoly_vignettes/VIEWpoly_tutorial.html). 
+* Access VIEWpoly tutorial [here](https://cristianetaniguti.github.io/viewpoly_vignettes/VIEWpoly_tutorial.html).
 
-We also presented the app main features in [this video](https://www.youtube.com/watch?v=OBt_jebhfeY)
+* VIEWpoly main features are also presented in this [video](https://www.youtube.com/watch?v=OBt_jebhfeY).
 
-If you would like to contribute to develop `VIEWpoly`, please check our [Contributing Guidelines](https://cristianetaniguti.github.io/viewpoly_vignettes/Contributing_guidelines.html).
+* Access more information about how to make your data sets available through VIEWpoly [here](https://cristianetaniguti.github.io/viewpoly_vignettes/Publish_data_VIEWpoly.html).
+
+* If you would like to contribute to develop `VIEWpoly`, please check our [Contributing Guidelines](https://cristianetaniguti.github.io/viewpoly_vignettes/Contributing_guidelines.html).
 
 ### References
 
-Taniguti CH, Gesteira GS, Lau J, Pereira GS, Zeng ZB, Byrne D, Riera-Lizarazu O, Mollinari M. VIEWpoly: a visualization tool to integrate and explore results of polyploid genetic analysis. Submitted.
+Taniguti CH, Gesteira GS, Lau J, Pereira GS, Zeng ZB, Byrne D, Riera-Lizarazu O, Mollinari M. "VIEWpoly: a visualization tool to integrate and explore results of polyploid genetic analysis". Journal of Open Source Software, 7(74), 4242. doi: 10.21105/joss.04242.
 
 Mollinari M, Garcia AAF. 2019. “Linkage analysis and haplotype phasing in experimental autopolyploid populations with high ploidy level using hidden Markov models.” G3: Genes, Genomes, Genetics 9 (10): 3297-3314. doi:10.1534/g3.119.400378.
 
