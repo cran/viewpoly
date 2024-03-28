@@ -9,6 +9,7 @@
 * Add tutorial video link
 * Update README.md
 
+
 # viewpoly 0.2.0
 
 Main modifications made during JOSS review:
@@ -43,3 +44,12 @@ Main modifications made during JOSS review:
 # viewpoly 0.3.2
 
 * CRAN version without all testthat tests
+
+# viewpoly 0.4.0
+
+* Add HIDECAN module
+
+# viewpoly 0.4.1
+
+* Add OneMap results as input 
+* Add port option in JBrowseR interface

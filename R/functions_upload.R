@@ -11,9 +11,9 @@
 prepare_examples <- function(example){
   viewmap_tetra <- viewqtl_tetra <- NULL
   if(example == "tetra_map"){
-    load(system.file("ext/viewmap_tetra.rda", package = "viewpoly"))
-    load(system.file("ext/viewqtl_tetra.rda", package = "viewpoly"))
-
+    viewmap_tetra <- readRDS(system.file("ext/viewmap_tetra.rds", package = "viewpoly"))
+    viewqtl_tetra <- readRDS(system.file("ext/viewqtl_tetra.rds", package = "viewpoly"))
+    
     structure(list(map=viewmap_tetra, 
                    qtl=viewqtl_tetra,
                    fasta = "https://gesteira.statgen.ncsu.edu/files/genome-browser/Stuberosum_448_v4.03.fa.gz",
@@ -24,6 +24,26 @@ prepare_examples <- function(example){
                    version = packageVersion("viewpoly")),
               class = "viewpoly")
   }
+}
+
+#' Upload hidecan example files
+#' 
+#' @param example character indicating the example dataset selected
+#' 
+#' @return object of class \code{viewpoly}
+#' 
+#' @import hidecan
+#' 
+#' @keywords internal
+prepare_hidecan_examples <- function(example){
+  gwas <- read.csv(system.file("ext/gwas.csv", package = "viewpoly"))
+  de <- read.csv(system.file("ext/de.csv", package = "viewpoly"))
+  can <- read.csv(system.file("ext/can.csv", package = "viewpoly"))
+  
+  structure(list(GWASpoly = NULL,
+                 GWAS= gwas, 
+                 DE= de,
+                 CAN = can))
 }
 
 #' Converts map information in custom format files to viewmap object
@@ -376,9 +396,9 @@ prepare_diaQTL <- function(scan1_list, scan1_summaries_list, fitQTL_list, BayesC
   idx <- which(sapply(CI, is.null))
   if(length(idx) != 0 | length(BayesCI_list_ord) != dim(qtl_info2)[1]){
     if(length(idx) != 0)
-    CI[[idx]] <- c(NA, NA)
+      CI[[idx]] <- c(NA, NA)
     else  CI[[length(CI) + 1]] <- c(NA, NA)
-
+    
   }
   
   CI <- do.call(rbind, CI)
@@ -481,3 +501,61 @@ prepare_qtl_custom_files <- function(selected_mks, qtl_info, blups, beta.hat,
   structure(qtls, class = "viewqtl")
 }
 
+#' Check hidecan inputs
+#' 
+#' @param input_list shiny input result containing file path
+#' @param func hidecan read input function
+#' 
+#' @importFrom stats setNames
+#' @importFrom utils read.csv
+#' @import hidecan
+#' @import purrr
+#' 
+read_input_hidecan <- function(input_list, func){
+  
+  ## Turning the hidecan constructors into safe functions
+  ## i.e. instead of throwing an error they return the error
+  ## message -> useful to escalate the error message in the app
+  safe_func <- safely(func)
+  
+  ## Read all files uploaded
+  res <- lapply(input_list$datapath,
+                read.csv) 
+  
+  ## Add file name
+  names(res) <- input_list$name
+  
+  ## Apply the hidecan constructor to each file: this will
+  ## check whether the input files have the correct columns etc
+  res <- lapply(res, safe_func) |> 
+    ## rather than the resulting list being: level 1 = file, level 2 = result and error
+    ## we get the result and error as level 1, and files as level 2
+    transpose() 
+  
+  ## Checking whether any file returned an error
+  no_error <- res$error |>
+    purrr::map_lgl(is.null) |>
+    all()
+  
+  if(!no_error){
+    
+    ## Extract error message
+    error_msg <- res$error |>
+      setNames(input_list$name) |>
+      purrr::map(purrr::pluck, "message") |>
+      purrr::imap(~ paste0("Input file ", .y, ": ", .x)) |>
+      purrr::reduce(paste0, collapse = "\n")
+    
+    ## Remove NULL elements from the list or results
+    ## If all are NULL, will return an empty list()
+    res$result <- purrr::discard(res$result,
+                                 is.null)
+    
+    showNotification(error_msg, type = "error", duration = 20)
+    validate(need(no_error, error_msg))
+    
+  }
+  
+  return(res$result)
+  
+}

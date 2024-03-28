@@ -25,7 +25,8 @@ mod_map_view_ui <- function(id){
           column(width = 12,
                  div(style = "position:absolute;right:1em;", 
                      div(
-                       actionButton(ns("goGenes"), "Go to Genome",icon("arrow-circle-left", verify_fa = FALSE), class = "btn btn-primary"))
+                       actionButton(ns("goGenes"), "Go to Genome",icon("arrow-circle-left", verify_fa = FALSE), class = "btn btn-primary"),
+                       actionButton(ns("goHidecan"), label = div("Go to HIDECAN", icon("arrow-circle-right", verify_fa = FALSE)), class = "btn btn-primary"))
                  )
           ),
           tags$h2(tags$b("VIEWmap")), br(), hr(),
@@ -118,7 +119,6 @@ mod_map_view_ui <- function(id){
             column(12,
                    hr(),
                    plotOutput(ns("plot_map"), height = "500px"), br(),
-                   includeHTML(system.file(package = "viewpoly", "ext/include.html")), br(), br(),
                    box(id = ns("box_phaplo"),width = 12, solidHeader = FALSE, collapsible = TRUE,  collapsed = TRUE, status="primary", title = actionLink(inputId = ns("phaploID"), label = "Parents haplotypes table"),
                        DT::dataTableOutput(ns("parents_haplo"))
                    )
@@ -194,6 +194,11 @@ mod_map_view_server <- function(input, output, session,
                       selected = "genes")
   })
   
+  observeEvent(input$goHidecan, {
+    updateTabsetPanel(session = parent_session, inputId = "viewpoly",
+                      selected = "hidecan")
+  })
+  
   observe({
     # Dynamic linkage group number
     if(!is.null(loadMap())){
@@ -242,16 +247,14 @@ mod_map_view_server <- function(input, output, session,
       for(i in 1:length(command))
         seqs[[i]] <- eval(parse(text = command[i]))
       
-      maps <- lapply(loadMap()$maps, function(x) {
+      maps.dist <- lapply(loadMap()$maps, function(x) {
         y <- x$l.dist
         names(y) <- x$mk.names
         y
       })
       
-      max_updated <- map_summary(left.lim = input$range[1], 
-                                 right.lim = input$range[2], 
-                                 ch = input$group, maps = maps, 
-                                 d.p1 = loadMap()$d.p1, d.p2 = loadMap()$d.p2)[[5]]
+      ch <- as.numeric(input$group)
+      max_updated <- as.numeric(maps.dist[[ch]][length(maps.dist[[ch]])])
       
       qtls_pos <- Reduce(union, seqs)
       chr_all <- 0:max_updated
@@ -333,7 +336,7 @@ mod_map_view_server <- function(input, output, session,
     validate(
       need(!is.null(loadMap()$ph.p1), "Upload map information in the upload session to access this feature.")
     )
-    maps <- lapply(loadMap()$maps, function(x) {
+    maps.dist <- lapply(loadMap()$maps, function(x) {
       y <- x$l.dist
       names(y) <- x$mk.names
       y
@@ -343,16 +346,15 @@ mod_map_view_server <- function(input, output, session,
                    ch = input$group,
                    d.p1 = loadMap()$d.p1,
                    d.p2 = loadMap()$d.p2, 
-                   maps = maps, 
+                   maps.dist = maps.dist, 
                    ph.p1 = loadMap()$ph.p1, 
                    ph.p2 = loadMap()$ph.p2,
-                   snp.names = input$op)
+                   snp.names = input$op, software = loadMap()$software)
     
     max_updated = reactive({
-      map_summary(left.lim = input$range[1], right.lim = input$range[2], 
-                  ch = input$group, maps = maps, 
-                  d.p1 = loadMap()$d.p1, 
-                  d.p2 = loadMap()$d.p2)[[5]]
+      
+      ch <- as.numeric(input$group)
+      as.numeric(maps.dist[[ch]][length(maps.dist[[ch]])])
     })
     
     observeEvent(max_updated, {
@@ -387,7 +389,7 @@ mod_map_view_server <- function(input, output, session,
     validate(
       need(!is.null(loadMap()$ph.p1), "Upload map information in the upload session to access this feature.")
     )
-    summary <- summary_maps(loadMap())
+    summary <- summary_maps(loadMap(), loadMap()$software)
     DT::datatable(summary, extensions = 'Buttons', 
                   options = list(
                     scrollX = TRUE,
@@ -491,10 +493,10 @@ mod_map_view_server <- function(input, output, session,
                    ch = input$group,
                    d.p1 = loadMap()$d.p1,
                    d.p2 = loadMap()$d.p2, 
-                   maps = maps, 
+                   maps.dist = maps, 
                    ph.p1 = loadMap()$ph.p1, 
                    ph.p2 = loadMap()$ph.p2,
-                   snp.names = input$op)   
+                   snp.names = input$op, software = loadMap()$software)   
     
     dev.off()
   }
